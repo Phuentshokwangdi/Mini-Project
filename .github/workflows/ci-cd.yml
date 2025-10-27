@@ -1,0 +1,89 @@
+name: WeatherApp CI/CD
+on:
+    push:
+        branches:
+            - main
+            - develop
+    pull_request:
+        branches:
+            - main
+            - develop
+
+jobs:
+    build-test-deploy:
+        runs-on: ubuntu-latest
+        env:
+            DJANGO_SETTINGS_MODULE: weather_dashboard.settings
+            OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+            GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+        steps:
+            # 1. Checkout code
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            # 2. Setup Python
+            - name: Setup Python 3.12
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.12"
+
+            # 3. Setup Node.js (for frontend, if needed)
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "20"
+
+            # 4. Install backend dependencies
+            - name: Install Python dependencies
+              run: |
+                  python -m venv venv
+                  source venv/bin/activate
+                  pip install --upgrade pip
+                  pip install -r requirements.txt
+
+            # 5. Install frontend dependencies & build
+            - name: Install and build frontend
+              run: |
+                  cd frontend
+                  npm install
+                  npm run build
+                  cd ..
+
+            # 6. Run Django migrations & tests
+            - name: Run Django tests
+              run: |
+                  source venv/bin/activate
+                  python manage.py migrate
+                  python manage.py test --verbosity=2
+
+            # 7. Lint backend code (optional)
+            - name: Run flake8 linter
+              run: |
+                  source venv/bin/activate
+                  flake8 .
+
+            # 8. Deploy to server (only on main branch)
+            - name: Deploy to Production Server
+              if: github.ref == 'refs/heads/main'
+              uses: appleboy/ssh-action@v0.1.6
+              with:
+                  host: ${{ secrets.SERVER_IP }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  script: |
+                      cd /var/www/weatherapp
+                      git fetch --all
+                      git reset --hard origin/main
+                      source venv/bin/activate
+                      pip install -r requirements.txt
+                      python manage.py migrate
+                      npm install --prefix frontend
+                      npm run build --prefix frontend
+                      sudo systemctl restart weatherapp
+                      echo "Deployment complete at $(date)"
+
+            # 9. Notify on failure (optional, Slack/Email)
+            - name: Notify on failure
+              if: failure()
+              run: echo "CI/CD pipeline failed! Check logs."
