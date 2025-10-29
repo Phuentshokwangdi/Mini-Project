@@ -132,7 +132,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # --- OpenWeatherMap API Key ---
-OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
+OPENWEATHER_API_KEY = os.getenv('787428212e55e192c65884b67e2991fa')
 if not OPENWEATHER_API_KEY:
     raise ValueError("OpenWeatherMap API key not configured! Set OPENWEATHER_API_KEY in environment.")
 
