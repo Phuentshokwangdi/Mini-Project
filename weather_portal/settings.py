@@ -2,12 +2,13 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+import dj_database_url
 
 # --- Base Directory ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security Settings ---
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', default='unsafe-secret-key-for-dev-only')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
@@ -67,10 +68,10 @@ TEMPLATES = [
 
 # --- Database ---
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+    )
 }
 
 # --- Password Validation ---
@@ -110,6 +111,7 @@ REST_FRAMEWORK = {
 }
 
 # --- JWT Configuration ---
+JWT_SECRET_KEY = config('JWT_SECRET_KEY', default=SECRET_KEY)
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -117,7 +119,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': config('JWT_SECRET_KEY', default=config('SECRET_KEY')),
+    'SIGNING_KEY': JWT_SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
@@ -135,9 +137,18 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # --- OpenWeatherMap API Key ---
-OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY')
+OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default=None)
+if not OPENWEATHER_API_KEY:
+    raise ValueError(
+        "OpenWeatherMap API key not configured! "
+        "Set OPENWEATHER_API_KEY as environment variable or GitHub secret."
+    )
 
 # --- Login / Logout Redirects ---
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# --- Debug warnings ---
+if DEBUG and SECRET_KEY == 'unsafe-secret-key-for-dev-only':
+    print("⚠️ WARNING: Using default SECRET_KEY in DEBUG mode. Not safe for production!")
