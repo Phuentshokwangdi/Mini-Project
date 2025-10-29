@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11" # match your Dockerfile version for consistency
 
       # Step 3: Install dependencies
       - name: Install dependencies
@@ -28,14 +28,16 @@ jobs:
           pip install -r requirements.txt
 
       # Step 4: Run Django tests
-      - name: Run tests
+      - name: Run Django tests
+        env:
+          DJANGO_SETTINGS_MODULE: MINI_PROJECT_WEATHER.settings # adjust if needed
         run: |
+          python manage.py migrate
           python manage.py test
 
-      # Step 5: Build Docker image (for CD)
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ github.repository }}:latest .
+      # Step 5: Set up Docker Buildx (for better build performance)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       # Step 6: Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -44,8 +46,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Step 7: Push Docker image to Docker Hub
-      - name: Push image
-        run: |
-          docker tag ${{ github.repository }}:latest ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
+      # Step 7: Build and Push Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:${{ github.run_number }}
+
+      # Step 8 (Optional): Deploy (e.g., to a VPS or Render)
+      # You can add an SSH deploy step or a cloud provider action here.
+      # Example for a VPS:
+      # - name: Deploy via SSH
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       docker pull ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
+      #       docker stop weather-portal || true
+      #       docker rm weather-portal || true
+      #       docker run -d -p 8000:8000 --name weather-portal ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
