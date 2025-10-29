@@ -2,15 +2,14 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
-import dj_database_url
 
 # --- Base Directory ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security Settings ---
-SECRET_KEY = config('SECRET_KEY', default='unsafe-secret-key-for-dev-only')
-DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+SECRET_KEY = os.getenv("SECRET_KEY", config("SECRET_KEY"))
+DEBUG = os.getenv("DEBUG", config("DEBUG", default=False, cast=bool))
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())).split(",")
 
 # --- Installed Apps ---
 INSTALLED_APPS = [
@@ -28,7 +27,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local apps
-    'accounts',
+    'authentication',
     'weather',
 ]
 
@@ -46,8 +45,8 @@ MIDDLEWARE = [
 ]
 
 # --- URL and WSGI ---
-ROOT_URLCONF = 'weather_portal.urls'
-WSGI_APPLICATION = 'weather_portal.wsgi.application'
+ROOT_URLCONF = 'jwt_auth_project.urls'
+WSGI_APPLICATION = 'jwt_auth_project.wsgi.application'
 
 # --- Templates ---
 TEMPLATES = [
@@ -68,10 +67,10 @@ TEMPLATES = [
 
 # --- Database ---
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 # --- Password Validation ---
@@ -94,24 +93,19 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- Default Primary Key Field Type ---
+# --- Default Primary Key ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Custom User Model ---
-AUTH_USER_MODEL = 'accounts.User'
+AUTH_USER_MODEL = 'authentication.User'
 
 # --- Django REST Framework ---
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
 }
 
 # --- JWT Configuration ---
-JWT_SECRET_KEY = config('JWT_SECRET_KEY', default=SECRET_KEY)
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -119,9 +113,8 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': JWT_SECRET_KEY,
+    'SIGNING_KEY': os.getenv('JWT_SECRET_KEY', SECRET_KEY),
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -137,18 +130,11 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # --- OpenWeatherMap API Key ---
-OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default=None)
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
 if not OPENWEATHER_API_KEY:
-    raise ValueError(
-        "OpenWeatherMap API key not configured! "
-        "Set OPENWEATHER_API_KEY as environment variable or GitHub secret."
-    )
+    raise ValueError("OpenWeatherMap API key not configured!")
 
 # --- Login / Logout Redirects ---
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
-
-# --- Debug warnings ---
-if DEBUG and SECRET_KEY == 'unsafe-secret-key-for-dev-only':
-    print("⚠️ WARNING: Using default SECRET_KEY in DEBUG mode. Not safe for production!")
