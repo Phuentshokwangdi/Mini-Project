@@ -7,9 +7,9 @@ from decouple import config, Csv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security Settings ---
-SECRET_KEY = os.getenv("SECRET_KEY", config("SECRET_KEY"))
-DEBUG = os.getenv("DEBUG", config("DEBUG", default=False, cast=bool))
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())).split(",")
+SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret-key-for-dev-only")
+DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # --- Installed Apps ---
 INSTALLED_APPS = [
@@ -45,8 +45,8 @@ MIDDLEWARE = [
 ]
 
 # --- URL and WSGI ---
-ROOT_URLCONF = 'jwt_auth_project.urls'
-WSGI_APPLICATION = 'jwt_auth_project.wsgi.application'
+ROOT_URLCONF = 'weather_portal.urls'
+WSGI_APPLICATION = 'weather_portal.wsgi.application'
 
 # --- Templates ---
 TEMPLATES = [
@@ -130,9 +130,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # --- OpenWeatherMap API Key ---
-OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
-if not OPENWEATHER_API_KEY:
-    raise ValueError("OpenWeatherMap API key not configured!")
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', 'your-openweather-api-key-here')
 
 # --- Login / Logout Redirects ---
 LOGIN_URL = '/login/'

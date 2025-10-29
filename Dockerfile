@@ -35,5 +35,4 @@ EXPOSE 8000
 RUN python manage.py collectstatic --noinput || true
 
 # Use Gunicorn as the WSGI server
-# Replace `MINI_PROJECT_WEATHER` with your actual project folder if different
-CMD ["gunicorn", "MINI_PROJECT_WEATHER.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "weather_portal.wsgi:application", "--bind", "0.0.0.0:8000"]

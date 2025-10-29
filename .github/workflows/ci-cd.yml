@@ -27,10 +27,16 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
+      - name: Install and build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
       # Step 4: Run Django tests
       - name: Run Django tests
         env:
-          DJANGO_SETTINGS_MODULE: jwt_auth_project.settings
+          DJANGO_SETTINGS_MODULE: weather_portal.settings
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
