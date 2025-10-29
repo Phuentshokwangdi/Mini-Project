@@ -3,7 +3,7 @@ from django.conf import settings
 
 
 class WeatherSearch(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ fix here
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  
     city = models.CharField(max_length=100)
     country = models.CharField(max_length=100, blank=True)
     temperature = models.FloatField()

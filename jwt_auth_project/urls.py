@@ -18,6 +18,6 @@ urlpatterns = [
     path('', home),  # 👈 Root URL now defined
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
-    path('api/protected/', include('authentication.urls')),  # You may later replace this include
+    path('api/protected/', include('authentication.urls')),  
     path('api/weather/', include('weather.urls')),
 ]
