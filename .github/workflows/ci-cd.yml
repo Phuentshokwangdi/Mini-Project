@@ -1,89 +1,51 @@
-name: WeatherApp CI/CD
+name: Django CI/CD Pipeline
+
 on:
-    push:
-        branches:
-            - main
-            - develop
-    pull_request:
-        branches:
-            - main
-            - develop
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-    build-test-deploy:
-        runs-on: ubuntu-latest
-        env:
-            DJANGO_SETTINGS_MODULE: weather_dashboard.settings
-            OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
-            GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+  build-test-deploy:
+    runs-on: ubuntu-latest
 
-        steps:
-            # 1. Checkout code
-            - name: Checkout repository
-              uses: actions/checkout@v3
+    steps:
+      # Step 1: Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            # 2. Setup Python
-            - name: Setup Python 3.12
-              uses: actions/setup-python@v4
-              with:
-                  python-version: "3.12"
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-            # 3. Setup Node.js (for frontend, if needed)
-            - name: Setup Node.js
-              uses: actions/setup-node@v3
-              with:
-                  node-version: "20"
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-            # 4. Install backend dependencies
-            - name: Install Python dependencies
-              run: |
-                  python -m venv venv
-                  source venv/bin/activate
-                  pip install --upgrade pip
-                  pip install -r requirements.txt
+      # Step 4: Run Django tests
+      - name: Run tests
+        run: |
+          python manage.py test
 
-            # 5. Install frontend dependencies & build
-            - name: Install and build frontend
-              run: |
-                  cd frontend
-                  npm install
-                  npm run build
-                  cd ..
+      # Step 5: Build Docker image (for CD)
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ github.repository }}:latest .
 
-            # 6. Run Django migrations & tests
-            - name: Run Django tests
-              run: |
-                  source venv/bin/activate
-                  python manage.py migrate
-                  python manage.py test --verbosity=2
+      # Step 6: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            # 7. Lint backend code (optional)
-            - name: Run flake8 linter
-              run: |
-                  source venv/bin/activate
-                  flake8 .
-
-            # 8. Deploy to server (only on main branch)
-            - name: Deploy to Production Server
-              if: github.ref == 'refs/heads/main'
-              uses: appleboy/ssh-action@v0.1.6
-              with:
-                  host: ${{ secrets.SERVER_IP }}
-                  username: ${{ secrets.SERVER_USER }}
-                  key: ${{ secrets.SERVER_SSH_KEY }}
-                  script: |
-                      cd /var/www/weatherapp
-                      git fetch --all
-                      git reset --hard origin/main
-                      source venv/bin/activate
-                      pip install -r requirements.txt
-                      python manage.py migrate
-                      npm install --prefix frontend
-                      npm run build --prefix frontend
-                      sudo systemctl restart weatherapp
-                      echo "Deployment complete at $(date)"
-
-            # 9. Notify on failure (optional, Slack/Email)
-            - name: Notify on failure
-              if: failure()
-              run: echo "CI/CD pipeline failed! Check logs."
+      # Step 7: Push Docker image to Docker Hub
+      - name: Push image
+        run: |
+          docker tag ${{ github.repository }}:latest ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
