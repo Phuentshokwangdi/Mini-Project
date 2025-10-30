@@ -39,6 +39,11 @@ jobs:
           python manage.py migrate --noinput
           python manage.py test
 
+      # Step 5: Collect static files (for production deployment)
+      - name: Collect static files
+        run: |
+          python manage.py collectstatic --noinput
+
       # Step 5: Set up Docker Buildx (for multi-platform builds)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
