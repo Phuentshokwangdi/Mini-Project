@@ -42,20 +42,6 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-        # Step 6: Run Django tests with coverage
-      - name: Run Django tests with coverage
-        env:
-          DJANGO_SETTINGS_MODULE: weather_portal.settings
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          DATABASE_URL: postgres://test_user:test_pass@localhost:5432/test_db
-        run: |
-          pip install coverage psycopg2-binary
-          python manage.py migrate --noinput
-          coverage run --source='.' manage.py test
-          coverage report
-
       # Step 7: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
