@@ -1,3 +1,4 @@
+import os
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -11,10 +12,11 @@ User = get_user_model()
 
 class WeatherSearchModelTest(TestCase):
     def setUp(self):
+        test_password = os.getenv("TEST_USER_PASSWORD", "testpass123")  # safer than hardcoding
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='testpass123'
+            password=test_password
         )
 
     def test_create_weather_search(self):
@@ -32,10 +34,11 @@ class WeatherSearchModelTest(TestCase):
 
 class WeatherAPITest(APITestCase):
     def setUp(self):
+        test_password = os.getenv("TEST_USER_PASSWORD", "testpass123")
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='testpass123'
+            password=test_password
         )
         self.client.force_authenticate(user=self.user)
 
