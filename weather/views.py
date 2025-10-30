@@ -22,9 +22,15 @@ def get_weather(request):
         return Response({'error': 'OpenWeatherMap API key not configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     try:
-        # OpenWeatherMap API call
+        # OpenWeatherMap API call - try city name first
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
         response = requests.get(url, timeout=10)
+
+        # If city not found (404), try with Bhutan country code for Bhutan cities
+        if response.status_code == 404:
+            url = f"https://api.openweathermap.org/data/2.5/weather?q={city},BT&appid={api_key}&units=metric"
+            response = requests.get(url, timeout=10)
+
         response.raise_for_status()
         
         data = response.json()
@@ -234,6 +240,12 @@ def favorites(request):
                 api_key = settings.OPENWEATHER_API_KEY
                 url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
                 response = requests.get(url, timeout=10)
+
+                # If city not found (404), try with Bhutan country code for Bhutan cities
+                if response.status_code == 404:
+                    url = f"https://api.openweathermap.org/data/2.5/weather?q={city},BT&appid={api_key}&units=metric"
+                    response = requests.get(url, timeout=10)
+
                 response.raise_for_status()
 
                 data = response.json()
