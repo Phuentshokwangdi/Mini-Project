@@ -16,7 +16,7 @@ def fetch_weather(city: str):
     if not api_key:
         raise ValueError("OpenWeatherMap API key not configured")
     
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     response = requests.get(url, timeout=10)
     response.raise_for_status()
     data = response.json()
