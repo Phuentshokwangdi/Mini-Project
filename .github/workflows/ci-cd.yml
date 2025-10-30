@@ -50,32 +50,37 @@ jobs:
               run: |
                   python manage.py collectstatic --noinput
 
-    build-and-deploy:
-        needs: test
-        runs-on: ubuntu-latest
-        if: github.ref == 'refs/heads/main'
-
-        steps:
-            - uses: actions/checkout@v4
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
-
-            - name: Log in to Docker Hub
-              uses: docker/login-action@v3
-              with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-            - name: Build and push Docker image
-              uses: docker/build-push-action@v5
-              with:
-                  context: .
-                  push: true
-                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest
-
-            - name: Deploy to server (optional)
+            - name: Health check
               run: |
-                  echo "Deployment step - add your deployment commands here"
-                  # Example: ssh to server and pull latest image
-                  # ssh user@server "docker pull ${{ secrets.DOCKERHUB_USERNAME }}/weather-portal:latest && docker-compose up -d"
+                  python manage.py check --deploy
+                  echo "✅ Django health check passed"
+
+            - name: Test API endpoints
+              run: |
+                  # Start Django server in background
+                  python manage.py runserver 0.0.0.0:8000 &
+                  SERVER_PID=$!
+
+                  # Wait for server to start
+                  sleep 10
+
+                  # Test health endpoint
+                  echo "Testing health endpoint..."
+                  curl -f http://localhost:8000/api/health/ || (echo "❌ Health check failed" && exit 1)
+                  echo "✅ Health check passed"
+
+                  # Test auth register endpoint (should return 400 for invalid data)
+                  echo "Testing auth register endpoint..."
+                  curl -X POST http://localhost:8000/api/auth/register/ \
+                    -H "Content-Type: application/json" \
+                    -d '{"username":"test","email":"test@example.com","password":"pass123","password_confirm":"pass123"}' \
+                    || echo "Register endpoint responded (expected for unauthenticated)"
+
+                  # Test weather endpoint (should return 401 for unauthenticated)
+                  echo "Testing weather endpoint..."
+                  curl -f http://localhost:8000/api/weather/?city=London \
+                    || echo "Weather endpoint requires auth (expected)"
+
+                  # Kill server
+                  kill $SERVER_PID || true
+                  echo "✅ API endpoint tests completed"

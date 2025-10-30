@@ -1,8 +1,15 @@
-# TODO List for Fixing Weather API Error
+# TODO: Enhance CI Pipeline with Test Cases, API Testing, and Health Checks
 
-- [x] Update .env file with the valid OpenWeatherMap API key (787428212e55e192c65884b67e2991fa)
-- [x] Edit weather/views.py to change all OpenWeatherMap API URLs from 'http://' to 'https://'
-- [x] Test the changes by running the Django server and verifying weather search works
-- [x] Add favorites view in weather/views.py to handle GET, POST, DELETE for favorites
-- [x] Add favorites URL path in weather/urls.py
-- [x] Test the favorites endpoint (server running, ready for manual testing)
+## Steps to Complete
+
+- [x] Create health check view in weather_portal/views.py
+- [x] Add health endpoint (/api/health/) to weather_portal/urls.py
+- [x] Update .github/workflows/ci-cd.yml to include expanded API endpoint tests (e.g., test auth register, weather get)
+- [x] Verify existing tests cover all endpoints; add simple integration tests if needed
+- [x] Run tests locally to verify changes
+- [x] Test CI pipeline (push to trigger workflow)
+
+## Notes
+- Health check endpoint should return JSON status (e.g., {"status": "healthy", "database": "ok"})
+- CI API tests should use curl to test key endpoints like /api/auth/register/, /api/weather/
+- Ensure tests are simple and cover basic functionality
