@@ -1,15 +1,27 @@
-from django.contrib import admin
-from django.urls import path, include
-from django.views.generic import TemplateView
-from .views import health_check
+from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import (
+    CustomTokenObtainPairView, 
+    register, 
+    profile, 
+    update_profile,
+    logout,
+    protected_view,
+    user_dashboard,
+    admin_only_view
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/health/', health_check, name='health_check'),
-    path('api/auth/', include('authentication.urls')),
-    path('api/weather/', include('weather.urls')),
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
-    path('register/', TemplateView.as_view(template_name='register.html'), name='register'),
-    path('login/', TemplateView.as_view(template_name='login.html'), name='login'),
-    path('dashboard/', TemplateView.as_view(template_name='dashboard.html'), name='dashboard'),
+    # Authentication endpoints
+    path('register/', register, name='register'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('profile/', profile, name='profile'),
+    path('profile/update/', update_profile, name='update_profile'),
+    path('logout/', logout, name='logout'),
+
+    # Protected routes
+    path('protected/', protected_view, name='protected_view'),
+    path('dashboard/', user_dashboard, name='user_dashboard'),
+    path('admin/', admin_only_view, name='admin_only_view'),
 ]
