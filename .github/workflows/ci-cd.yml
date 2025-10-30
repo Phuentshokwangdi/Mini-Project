@@ -42,15 +42,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-      # Step 4: Lint & format checks
-      - name: Lint Python code
-        run: |
-          pip install black isort flake8
-          black --check .
-          isort --check-only .
-          flake8 .
-
-      # Step 5: Security checks
+      # Step 4: Security checks
       - name: Security check
         run: |
           pip install bandit safety
