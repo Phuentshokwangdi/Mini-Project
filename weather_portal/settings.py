@@ -130,7 +130,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # --- OpenWeatherMap API Key ---
-OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', 'your-openweather-api-key-here')
+OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default='your-openweather-api-key-here')
 
 # --- Login / Logout Redirects ---
 LOGIN_URL = '/login/'

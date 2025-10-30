@@ -154,9 +154,14 @@ async function addToFavorites(){
       headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' },
       body: JSON.stringify({city})
     });
-    if(res.ok) loadFavorites();
-    else alert('Failed to add favorite');
-  } catch(err){ alert(err.message); }
+    const data = await res.json();
+    if(res.ok){
+      loadFavorites();
+      alert(data.message || 'Added to favorites');
+    } else {
+      alert(data.error || 'Failed to add favorite');
+    }
+  } catch(err){ alert('Error: ' + err.message); }
 }
 
 async function loadFavorites(){
@@ -167,17 +172,29 @@ async function loadFavorites(){
       const data = await res.json();
       const container = document.getElementById('favoritesResults');
       if(!data.length) return container.innerHTML='<p class="text-muted">No favorite cities</p>';
-      container.innerHTML = data.map(c=>`<div class="d-flex justify-content-between mb-2"><span>${c}</span><button class="btn btn-sm btn-outline-danger" onclick="removeFavorite('${c}')"><i class="fas fa-trash"></i></button></div>`).join('');
+      container.innerHTML = data.map(c=>`<div class="d-flex justify-content-between mb-2"><span>${c.city} - ${c.temperature}°C, ${c.description}</span><button class="btn btn-sm btn-outline-danger" onclick="removeFavorite('${c.city}')"><i class="fas fa-trash"></i></button></div>`).join('');
+    } else {
+      console.error('Failed to load favorites');
     }
-  } catch(err){ console.error(err); }
+  } catch(err){ console.error('Error loading favorites:', err); }
 }
 
 async function removeFavorite(city){
   const token = getToken();
   try{
-    const res = await fetch(`/api/weather/favorites/?city=${encodeURIComponent(city)}`, { method:'DELETE', headers:{'Authorization': `Bearer ${token}`}});
-    if(res.ok) loadFavorites();
-  } catch(err){ console.error(err); }
+    const res = await fetch('/api/weather/favorites/', {
+      method:'DELETE',
+      headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({city})
+    });
+    const data = await res.json();
+    if(res.ok){
+      loadFavorites();
+      alert(data.message || 'Removed from favorites');
+    } else {
+      alert(data.error || 'Failed to remove favorite');
+    }
+  } catch(err){ console.error('Error removing favorite:', err); }
 }
 
 // Recent Searches
