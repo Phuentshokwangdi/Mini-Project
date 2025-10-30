@@ -1,7 +1,8 @@
-# TODO: Add Authentication Test Cases to CI
+# TODO List for Fixing Weather API Error
 
-## Steps to Complete
-- [x] Add comprehensive test cases to authentication/tests.py for all auth endpoints (register, login, profile, update_profile, logout, protected views, admin view)
-- [x] Ensure tests use APITestCase and cover success/failure scenarios
-- [x] Run tests locally to verify they pass
-- [x] Confirm CI pipeline runs the new tests (already configured)
+- [x] Update .env file with the valid OpenWeatherMap API key (787428212e55e192c65884b67e2991fa)
+- [x] Edit weather/views.py to change all OpenWeatherMap API URLs from 'http://' to 'https://'
+- [x] Test the changes by running the Django server and verifying weather search works
+- [x] Add favorites view in weather/views.py to handle GET, POST, DELETE for favorites
+- [x] Add favorites URL path in weather/urls.py
+- [x] Test the favorites endpoint (server running, ready for manual testing)

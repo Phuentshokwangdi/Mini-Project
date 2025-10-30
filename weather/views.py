@@ -23,7 +23,7 @@ def get_weather(request):
     
     try:
         # OpenWeatherMap API call
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
@@ -131,7 +131,7 @@ def advanced_search(request):
             try:
                 # Get current weather for favorite city
                 api_key = settings.OPENWEATHER_API_KEY
-                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+                url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
                 response = requests.get(url, timeout=10)
                 response.raise_for_status()
                 
@@ -215,17 +215,81 @@ def search_suggestions(request):
     return Response({'suggestions': suggestions}, status=status.HTTP_200_OK)
 
 
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def favorites(request):
+    """Manage user's favorite cities"""
+    try:
+        search_filter = SearchFilter.objects.get(user=request.user)
+        favorite_cities = json.loads(search_filter.favorite_cities) if search_filter.favorite_cities else []
+    except SearchFilter.DoesNotExist:
+        search_filter = SearchFilter.objects.create(user=request.user)
+        favorite_cities = []
+
+    if request.method == 'GET':
+        # Get current weather for favorite cities
+        results = []
+        for city in favorite_cities[:5]:  # Limit to 5 favorites
+            try:
+                api_key = settings.OPENWEATHER_API_KEY
+                url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+
+                data = response.json()
+                weather_data = {
+                    'city': data['name'],
+                    'temperature': data['main']['temp'],
+                    'description': data['weather'][0]['description'].title(),
+                    'humidity': data['main']['humidity'],
+                    'country': data['sys']['country'],
+                    'wind_speed': data['wind']['speed'],
+                    'pressure': data['main']['pressure'],
+                    'is_favorite': True
+                }
+                results.append(weather_data)
+            except:
+                continue  # Skip cities that fail
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    elif request.method == 'POST':
+        city = request.data.get('city')
+        if not city:
+            return Response({'error': 'City is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if city not in favorite_cities:
+            favorite_cities.append(city)
+            search_filter.favorite_cities = json.dumps(favorite_cities)
+            search_filter.save()
+
+        return Response({'message': f'{city} added to favorites'}, status=status.HTTP_201_CREATED)
+
+    elif request.method == 'DELETE':
+        city = request.data.get('city')
+        if not city:
+            return Response({'error': 'City is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if city in favorite_cities:
+            favorite_cities.remove(city)
+            search_filter.favorite_cities = json.dumps(favorite_cities)
+            search_filter.save()
+            return Response({'message': f'{city} removed from favorites'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': f'{city} not in favorites'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def search_analytics(request):
     """Get search analytics for the user"""
     user_searches = WeatherSearch.objects.filter(user=request.user)
-    
+
     # Most searched cities
     popular_cities = user_searches.values('city').annotate(
         count=Count('city')
     ).order_by('-count')[:5]
-    
+
     # Temperature distribution
     temp_ranges = {
         'cold': user_searches.filter(temperature__lt=10).count(),
@@ -233,12 +297,12 @@ def search_analytics(request):
         'warm': user_searches.filter(temperature__gte=20, temperature__lt=30).count(),
         'hot': user_searches.filter(temperature__gte=30).count(),
     }
-    
+
     # Weather conditions
     weather_conditions = user_searches.values('description').annotate(
         count=Count('description')
     ).order_by('-count')[:5]
-    
+
     analytics = {
         'total_searches': user_searches.count(),
         'popular_cities': list(popular_cities),
@@ -246,5 +310,5 @@ def search_analytics(request):
         'weather_conditions': list(weather_conditions),
         'last_search': WeatherSearchSerializer(user_searches.first()).data if user_searches.exists() else None
     }
-    
+
     return Response(analytics, status=status.HTTP_200_OK)
