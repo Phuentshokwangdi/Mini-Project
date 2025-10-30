@@ -17,12 +17,11 @@ urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('profile/', profile, name='profile'),
-    path('profile/update/', update_profile, name='update_profile'),
+    path('update-profile/', update_profile, name='update_profile'),
     path('logout/', logout, name='logout'),
     
     # Protected route examples
     path('protected/', protected_view, name='protected_view'),
     path('dashboard/', user_dashboard, name='user_dashboard'),
-    path('admin/', admin_only_view, name='admin_only_view'),
+    path('admin-only/', admin_only_view, name='admin_only_view'),
 ]
-
