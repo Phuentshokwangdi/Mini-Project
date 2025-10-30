@@ -2,9 +2,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.contrib.auth.models import User
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth import get_user_model
 from .serializers import UserRegistrationSerializer, CustomTokenObtainPairSerializer, UserSerializer
+
+# Use custom User model
+User = get_user_model()
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -62,7 +65,6 @@ def logout(request):
     return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
 
 
-# Protected route examples
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def protected_view(request):
@@ -87,7 +89,7 @@ def user_dashboard(request):
         'message': 'Welcome to your dashboard!',
         'user': UserSerializer(request.user).data,
         'dashboard_data': {
-            'total_logins': 1,  # This would come from a real tracking system
+            'total_logins': 1,  # Replace with real tracking
             'last_login': request.user.last_login,
             'account_status': 'Active' if request.user.is_active else 'Inactive'
         }
@@ -104,7 +106,7 @@ def admin_only_view(request):
         return Response({
             'error': 'Admin access required'
         }, status=status.HTTP_403_FORBIDDEN)
-    
+
     return Response({
         'message': 'Admin panel access granted',
         'admin_user': request.user.username,
@@ -114,4 +116,3 @@ def admin_only_view(request):
             'staff_users': User.objects.filter(is_staff=True).count()
         }
     })
-
